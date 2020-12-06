@@ -1,0 +1,31 @@
+version: "3"
+
+services:
+  app:
+    build:
+      context: app/
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./app:/app
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8000"
+    env_file:
+      - config.env
+    depends_on:
+      - db
+
+  db:
+    image: postgres:12-alpine
+    env_file:
+      - config.env
+
+  caddy:
+    build: ./Caddy
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - "app"
+    restart: always

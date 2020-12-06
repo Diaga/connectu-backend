@@ -1,0 +1,7 @@
+api.connectu.ml:443 {
+    reverse_proxy http://app:8000
+
+    tls {
+        on_demand
+    }
+}
