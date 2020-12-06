@@ -50,7 +50,7 @@ class University(models.Model):
 class UserManager(BaseUserManager):
 
     def create_user(self, email, password, **kwargs):
-        if not email or password:
+        if not email or not password:
             raise ValueError('Please specify email and password!')
 
         user = self.model(email=email.lower(), **kwargs)
