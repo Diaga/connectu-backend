@@ -170,7 +170,7 @@ class MinQuestionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Question
-        fields = ("id", "text", "user")
+        fields = ("id", "title", "user")
 
 
 class MinAnswerSerializer(serializers.ModelSerializer):
