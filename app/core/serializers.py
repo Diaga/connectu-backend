@@ -207,6 +207,9 @@ class QuestionSerializer(serializers.ModelSerializer):
     def get_is_upvoted(self, obj):
         """Return if the current user has upvoted"""
         user = self.context['request'].user
+        upvote_query = obj.upvotes.filter(user=user)
+        if not upvote_query.exists():
+            obj.upvotes.add(Upvote.objects.create(user=user, question=obj, has_upvoted=False))
         return obj.upvotes.filter(user=user).first().has_upvoted
 
     # def get_keyword(self, obj):
@@ -243,6 +246,9 @@ class AnswerSerializer(serializers.ModelSerializer):
     def get_is_upvoted(self, obj):
         """Return if the current user has upvoted"""
         user = self.context['request'].user
+        upvote_query = obj.upvotes.filter(user=user)
+        if not upvote_query.exists():
+            obj.upvotes.add(Upvote.objects.create(user=user, answer=obj, has_upvoted=False))
         return obj.upvotes.filter(user=user).first().has_upvoted
 
     class Meta:

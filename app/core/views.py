@@ -158,6 +158,8 @@ class UpvotesViewSet(viewsets.GenericViewSet,
 
     queryset = Upvote.objects.all()
 
+    is_answer = False
+
     def get_queryset(self):
         """Getting required viewset"""
         user = self.request.user
@@ -169,9 +171,10 @@ class UpvotesViewSet(viewsets.GenericViewSet,
         answer_id = self.request.data.get('answer', None)
         question_id = self.request.data.get('question', None)
         if answer_id is not None:
-            queryset.filter(answer__id=answer_id)
+            self.is_answer = True
+            queryset = queryset.filter(answer__id=answer_id)
         elif question_id is not None:
-            queryset.filter(question__id=question_id)
+            queryset = queryset.filter(question__id=question_id)
         else:
             return None
         return queryset.first()
@@ -180,6 +183,16 @@ class UpvotesViewSet(viewsets.GenericViewSet,
         upvote = self.get_object()
         if upvote is not None:
             upvote.has_upvoted = self.request.data.get('has_upvoted')
+            if self.is_answer:
+                user = upvote.answer.user
+            else:
+                user = upvote.question.user
+
+            if upvote.has_upvoted:
+                if user.is_mentor:
+                    user.points += 5
+                    user.save()
+
             upvote.save()
             return Response('Upvote updated', status=status.HTTP_200_OK)
         else:
