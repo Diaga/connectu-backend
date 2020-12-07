@@ -2,7 +2,7 @@ from django.contrib.auth import authenticate
 
 from rest_framework import serializers
 
-from .models import User, Mentor, Student, Degree, University, Question, Answer, Comment, Upvote
+from .models import User, Mentor, Student, Degree, University, Question, Answer, Comment, Upvote, PairSession
 
 
 class DegreeSerializer(serializers.ModelSerializer):
@@ -300,3 +300,22 @@ class UpvoteSerializer(serializers.ModelSerializer):
             'answer': {'required': False},
             'question': {'required': False},
         }
+
+
+class PairSessionSerializer(serializers.ModelSerializer):
+    """Serializer for Paired Session"""
+    mentor = serializers.SerializerMethodField("get_mentor")
+    student = serializers.SerializerMethodField("get_student")
+
+    def get_student(self, obj):
+        """Return the related student user"""
+        return UserSerializer(obj.student.user).data
+
+    def get_mentor(self, obj):
+        """Return the related mentor user"""
+        return UserSerializer(obj.mentor.user).data
+
+    class Meta:
+        model = PairSession
+        fields = ("id", "price", "url", "created_at", "mentor", "student")
+        read_only_fields = ("id", )

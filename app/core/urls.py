@@ -6,14 +6,15 @@ from . import views
 
 router = DefaultRouter()
 router.register(r'user', views.UserDetailViewSet, basename='user')
-router.register(r'question', views.QuestionDetailViewSet, basename='question')
-router.register(r'answer', views.AnswerDetailViewSet, basename='answer')
-router.register(r'comment', views.CommentDetailViewSet, basename='comment')
-router.register(r'upvote', views.UpvotesViewSet, basename='upvote')
-
-app_name = 'core'
+router.register(r"question", views.QuestionDetailViewSet, basename="question")
+router.register(r"answer", views.AnswerDetailViewSet, basename="answer")
+router.register(r"comment", views.CommentDetailViewSet, basename="comment")
+router.register(r"upvote", views.UpvotesViewSet, basename="upvote")
+router.register(r"session", views.PairSessionViewSet, basename="session")
+app_name = "core"
 
 urlpatterns = [
     path('token/', views.ObtainAuthToken.as_view(), name='auth-token'),
-    path('core/', include(router.urls)),
+    path("core/", include(router.urls)),
 ]
+

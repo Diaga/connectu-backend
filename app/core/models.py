@@ -195,7 +195,7 @@ class Answer(models.Model):
 
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
-        """Create Upvote objects after creating new Question"""
+        """Create Upvote objects after creating new Answer"""
         super(Answer, self).save(
             force_insert=force_insert, force_update=force_update, using=using,
             update_fields=update_fields
@@ -268,8 +268,8 @@ class FeedbackForm(models.Model):
         app_label = 'core'
         default_related_name = 'feedback_forms'
 
-    def __str__(self):
-        return f'Feedback form of {self.pair_session}'
+    # def __str__(self):
+    #     return f'Feedback form of {self.pair_sessions}'
 
 
 class PairSession(models.Model):
@@ -284,7 +284,7 @@ class PairSession(models.Model):
     mentor = models.ForeignKey(Mentor, on_delete=models.CASCADE)
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
 
-    feedback_session = models.OneToOneField(FeedbackForm, on_delete=models.CASCADE)
+    feedback_session = models.OneToOneField(FeedbackForm, on_delete=models.CASCADE, null=True, blank=True)
 
     class Meta:
         app_label = 'core'
@@ -292,3 +292,19 @@ class PairSession(models.Model):
 
     def __str__(self):
         return f'{self.mentor.user.email} paired with {self.student.user.email}'
+
+    def save(self, force_insert=False, force_update=False, using=None,
+             update_fields=None):
+        """Create Upvote objects after creating new Answer"""
+        if self.feedback_session is None:
+            self.feedback_session = FeedbackForm.objects.create()
+
+
+        else:
+            return AssertionError
+        super(PairSession, self).save(
+            force_insert=force_insert, force_update=force_update, using=using,
+            update_fields=update_fields
+        )
+
+

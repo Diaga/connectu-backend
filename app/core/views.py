@@ -9,7 +9,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework import viewsets, mixins, status
 
 from . import serializers
-from .models import Question, Answer, Comment, Upvote, User
+from .models import Question, Answer, Comment, Upvote, User, PairSession, Mentor
 
 
 class AuthTokenViewSet(ObtainAuthToken):
@@ -17,7 +17,6 @@ class AuthTokenViewSet(ObtainAuthToken):
 
     serializer_class = serializers.AuthTokenSerializer
     renderer_classes = api_settings.DEFAULT_RENDERER_CLASSES
-
 
 class UserDetailViewSet(viewsets.ModelViewSet):
 
@@ -116,7 +115,7 @@ class AnswerDetailViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         """Updating user"""
-        question = Question.objects.filter(id=self.request.data.get('question')).first()
+        question = Question.objects.filter(id=self.request.data.get("question")).first()
         serializer.save(user=self.request.user, question=question)
 
 
@@ -139,11 +138,11 @@ class CommentDetailViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(user=user) | queryset.filter(answer__user=user)
         elif not user.is_mentor:
             queryset.filter(user=user) | queryset.filter(answer__question__user=user)
-        return queryset.order_by('-created_at')
+        return queryset.order_by("-create_at")
 
     def perform_create(self, serializer):
         """Updating user"""
-        answer = Answer.objects.filter(id=self.request.data.get('answer')).first()
+        answer = Answer.objects.filter(id=self.request.data.get("answer")).first()
         serializer.save(user=self.request.user, answer=answer)
 
 
@@ -168,8 +167,8 @@ class UpvotesViewSet(viewsets.GenericViewSet,
     def get_object(self):
         """Getting the object to update"""
         queryset = self.get_queryset()
-        answer_id = self.request.data.get('answer', None)
-        question_id = self.request.data.get('question', None)
+        answer_id = self.request.data.get("answer", None)
+        question_id = self.request.data.get("question", None)
         if answer_id is not None:
             self.is_answer = True
             queryset = queryset.filter(answer__id=answer_id)
@@ -194,6 +193,35 @@ class UpvotesViewSet(viewsets.GenericViewSet,
                     user.save()
 
             upvote.save()
-            return Response('Upvote updated', status=status.HTTP_200_OK)
+            return Response("Upvote updated", status=status.HTTP_200_OK)
         else:
-            return Response('Provide answer or question', status=status.HTTP_400_BAD_REQUEST)
+            return Response("Provide answer or question", status=status.HTTP_400_BAD_REQUEST)
+
+
+class PairSessionViewSet(viewsets.GenericViewSet,
+                         mixins.CreateModelMixin):
+    """View set for pair session model"""
+
+    authentication_classes = [TokenAuthentication, ]
+
+    permission_classes = [IsAuthenticated, ]
+
+    serializer_class = serializers.PairSessionSerializer
+
+    queryset = PairSession.objects.all()
+
+    def get_queryset(self):
+        """Enforcing scope"""
+        user = self.request.user
+        queryset = super(PairSessionViewSet, self).get_queryset()
+        if user.is_mentor:
+            queryset.filter(mentor=user.mentor).all()
+        else:
+            queryset.filter(student=user.mentor).all()
+        return queryset.order_by("-created_at")
+
+    def perform_create(self, serializer):
+        mentor_id = self.request.data.get("mentor")
+        serializer.save(student=self.request.user.student, mentor=Mentor.objects.filter(id=mentor_id).first())
+
+
