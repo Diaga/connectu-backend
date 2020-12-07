@@ -1,12 +1,12 @@
 from django.contrib.auth import authenticate
 
-from rest_framework import serializers
+from rest_framework import serializers, status
+from rest_framework.response import Response
 
-from .models import User, Mentor, Student, Degree, University, Question
+from .models import User, Mentor, Student, Degree, University, Question, Answer
 
 
 class DegreeSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = Degree
         fields = ('id', 'name')
@@ -14,7 +14,6 @@ class DegreeSerializer(serializers.ModelSerializer):
 
 
 class UniversitySerializer(serializers.ModelSerializer):
-
     degrees = DegreeSerializer(many=True, read_only=True)
 
     class Meta:
@@ -23,14 +22,13 @@ class UniversitySerializer(serializers.ModelSerializer):
 
 
 class MentorSerializer(serializers.ModelSerializer):
-
     degree = DegreeSerializer()
     university = UniversitySerializer()
 
     class Meta:
         model = Mentor
         fields = ('id', 'is_professional', 'points', 'degree', 'university')
-        read_only_fields = ('id', 'points', )
+        read_only_fields = ('id', 'points',)
 
     def create(self, validated_data):
 
@@ -68,15 +66,13 @@ class MentorSerializer(serializers.ModelSerializer):
 
 
 class StudentSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = Student
-        fields = ('id', )
-        read_only_fields = ('id', )
+        fields = ('id',)
+        read_only_fields = ('id',)
 
 
 class UserSerializer(serializers.ModelSerializer):
-
     password = serializers.CharField(
         style={'input_type': 'password'},
         trim_whitespace=False,
@@ -90,7 +86,7 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('id', 'email', 'password', 'mentor', 'student', 'is_mentor')
-        read_only_fields = ('id', )
+        read_only_fields = ('id',)
 
     def create(self, validated_data):
 
@@ -164,9 +160,43 @@ class AuthTokenSerializer(serializers.Serializer):
         return attrs
 
 
+class MinQuestionSerializer(serializers.ModelSerializer):
+    user = serializers.SerializerMethodField('get_user')
+
+    def get_user(self, obj):
+        """Returning the related user"""
+        return UserSerializer(obj.user).data
+
+    class Meta:
+        model = Question
+        fields = ("id", "text", "user")
+
+
+class MinAnswerSerializer(serializers.ModelSerializer):
+    user = serializers.SerializerMethodField('get_user')
+
+    def get_user(self, obj):
+        """Returning the related user"""
+        return UserSerializer(obj.user).data
+
+    class Meta:
+        model = Answer
+        fields = ('id', 'text', 'user',)
+        read_only_fields = ('id',)
+
+
 class QuestionSerializer(serializers.ModelSerializer):
     """Serializer for question model"""
     user = serializers.SerializerMethodField('get_user')
+    answers = serializers.SerializerMethodField('get_answers')
+
+    def get_answers(self, obj):
+        """Returning the related answers"""
+        answers = Answer.objects.filter(question=obj)
+        if answers.count() > 0:
+            return MinAnswerSerializer(answers, many=True).data
+        else:
+            return None
 
     def get_user(self, obj):
         """Returning the related user"""
@@ -178,5 +208,24 @@ class QuestionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Question
-        fields = ('id', 'title', 'text', 'created_at', 'user')
-        read_only_fields = ('id', )
+        fields = ('id', 'title', 'text', 'created_at', 'user', "answers")
+        read_only_fields = ('id',)
+
+
+class AnswerSerializer(serializers.ModelSerializer):
+    """Serializer for Anser model"""
+    user = serializers.SerializerMethodField('get_user')
+    question = serializers.SerializerMethodField('get_question')
+
+    def get_user(self, obj):
+        """Returning the related user"""
+        return UserSerializer(obj.user).data
+
+    def get_question(self, obj):
+        """Returning the related question"""
+        return MinQuestionSerializer(obj.question).data
+
+    class Meta:
+        model = Answer
+        fields = ('id', 'text', 'created_at', 'user', 'question')
+        read_only_fields = ('id',)
