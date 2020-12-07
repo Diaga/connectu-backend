@@ -6,7 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework import viewsets
 
 from . import serializers
-from .models import Question, Answer
+from .models import Question, Answer, Comment
 
 
 class AuthTokenViewSet(ObtainAuthToken):
@@ -46,7 +46,7 @@ class QuestionDetailViewSet(viewsets.ModelViewSet):
 
 
 class AnswerDetailViewSet(viewsets.ModelViewSet):
-    """Model view set for question model"""
+    """Model view set for answer model"""
 
     authentication_classes = [TokenAuthentication, ]
 
@@ -67,6 +67,33 @@ class AnswerDetailViewSet(viewsets.ModelViewSet):
         return queryset.order_by('-created_at')
 
     def perform_create(self, serializer):
-        """Updating keywords"""
+        """Updating user"""
         question = Question.objects.filter(id=self.request.data.get("question")).first()
         serializer.save(user=self.request.user, question=question)
+
+
+class CommentDetailViewSet(viewsets.ModelViewSet):
+    """View set for comment model"""
+
+    authentication_classes = [TokenAuthentication, ]
+
+    permission_classes = [IsAuthenticated, ]
+
+    serializer_class = serializers.CommentSerializer
+
+    queryset = Comment.objects.all()
+
+    def get_queryset(self):
+        """Returning only related comments"""
+        user = self.request.user
+        queryset = super(CommentDetailViewSet, self).get_queryset()
+        if user.is_mentor:
+            queryset = queryset.filter(user=user) | queryset.filter(answer__user=user)
+        elif not user.is_mentor:
+            queryset.filter(user=user) | queryset.filter(answer__question__user=user)
+        return queryset.order_by("-create_at")
+
+    def perform_create(self, serializer):
+        """Updating user"""
+        answer = Answer.objects.filter(id=self.request.data.get("answer")).first()
+        serializer.save(user=self.request.user, answer=answer)

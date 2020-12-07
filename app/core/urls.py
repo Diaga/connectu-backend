@@ -7,6 +7,7 @@ from . import views
 router = DefaultRouter()
 router.register(r"question", views.QuestionDetailViewSet, basename="question")
 router.register(r"answer", views.AnswerDetailViewSet, basename="answer")
+router.register(r"comment", views.CommentDetailViewSet, basename="comment")
 
 app_name = "core"
 

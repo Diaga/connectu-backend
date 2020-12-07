@@ -3,7 +3,7 @@ from django.contrib.auth import authenticate
 from rest_framework import serializers, status
 from rest_framework.response import Response
 
-from .models import User, Mentor, Student, Degree, University, Question, Answer
+from .models import User, Mentor, Student, Degree, University, Question, Answer, Comment
 
 
 class DegreeSerializer(serializers.ModelSerializer):
@@ -161,6 +161,7 @@ class AuthTokenSerializer(serializers.Serializer):
 
 
 class MinQuestionSerializer(serializers.ModelSerializer):
+    """Serializer for question model to be returned along answer"""
     user = serializers.SerializerMethodField('get_user')
 
     def get_user(self, obj):
@@ -173,6 +174,7 @@ class MinQuestionSerializer(serializers.ModelSerializer):
 
 
 class MinAnswerSerializer(serializers.ModelSerializer):
+    """Serializer for answer model to be returned along questions"""
     user = serializers.SerializerMethodField('get_user')
 
     def get_user(self, obj):
@@ -213,9 +215,14 @@ class QuestionSerializer(serializers.ModelSerializer):
 
 
 class AnswerSerializer(serializers.ModelSerializer):
-    """Serializer for Anser model"""
+    """Serializer for Answer model"""
     user = serializers.SerializerMethodField('get_user')
     question = serializers.SerializerMethodField('get_question')
+    comments= serializers.SerializerMethodField('get_comments')
+
+    def get_comments(self, obj):
+        """Returning associated comments"""
+        return MinCommentSerializer(Comment.objects.filter(answer=obj).all(), many=True).data
 
     def get_user(self, obj):
         """Returning the related user"""
@@ -227,5 +234,34 @@ class AnswerSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Answer
-        fields = ('id', 'text', 'created_at', 'user', 'question')
+        fields = ('id', 'text', 'created_at', 'user', 'question',"comments")
+        read_only_fields = ('id',)
+
+
+class MinCommentSerializer(serializers.ModelSerializer):
+    """Serializer for Comment model"""
+    user = serializers.SerializerMethodField("get_user")
+
+    def get_user(self, obj):
+        return UserSerializer(obj.user).data
+    class Meta:
+        model = Comment
+        fields = ("id", "text", "created_at", "user")
+        read_only_fields = ('id',)
+
+
+class CommentSerializer(serializers.ModelSerializer):
+    """Serializer for Comment model"""
+    user = serializers.SerializerMethodField("get_user")
+    answer = serializers.SerializerMethodField("get_answer")
+
+    def get_user(self, obj):
+        return UserSerializer(obj.user).data
+
+    def get_answer(self, obj):
+        return MinAnswerSerializer(obj.answer).data
+
+    class Meta:
+        model = Comment
+        fields = ("id", "text", "created_at", "user", "answer")
         read_only_fields = ('id',)
