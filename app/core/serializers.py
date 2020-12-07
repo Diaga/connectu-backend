@@ -34,13 +34,13 @@ class MentorSerializer(serializers.ModelSerializer):
         degree = validated_data.pop('degree', None)
         university = validated_data.pop('university', None)
 
-        mentor = super(MentorSerializer, self).create(validated_data)
-
         if degree is not None:
-            mentor.degree = Degree.objects.get(pk=degree)
+            validated_data['degree'] = Degree.objects.create(**degree)
 
         if university is not None:
-            mentor.university = University.objects.get(pk=university)
+            validated_data['university'] = University.objects.create(**university)
+
+        mentor = super(MentorSerializer, self).create(validated_data)
 
         mentor.save()
 
@@ -98,9 +98,11 @@ class UserSerializer(serializers.ModelSerializer):
         user = User.objects.create_user(**validated_data)
 
         if mentor is not None:
-            user.mentor = Mentor.objects.create(**mentor)
+            mentor_serializer = MentorSerializer(data=mentor)
+            if mentor_serializer.is_valid(raise_exception=True):
+                user.mentor = mentor_serializer.save(user=user)
         elif student is not None:
-            user.student = Student.objects.create(**student)
+            user.student = Student.objects.create(**student, user=user)
 
         user.save()
 
