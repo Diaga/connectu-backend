@@ -1,12 +1,13 @@
 from rest_framework.authtoken.views import ObtainAuthToken
+from rest_framework.response import Response
 from rest_framework.settings import api_settings
 
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
-from rest_framework import viewsets
+from rest_framework import viewsets, mixins, status
 
 from . import serializers
-from .models import Question, Answer, Comment
+from .models import Question, Answer, Comment, Upvote
 
 
 class AuthTokenViewSet(ObtainAuthToken):
@@ -41,7 +42,7 @@ class QuestionDetailViewSet(viewsets.ModelViewSet):
         queryset = super(QuestionDetailViewSet, self).get_queryset()
         if user.is_mentor:
             queryset.all()
-            #TODO: filtering on the basis of keywords
+            # TODO: filtering on the basis of keywords
         elif not user.is_mentor:
             queryset.filter(user=user).all()
         return queryset.order_by('-created_at')
@@ -113,3 +114,42 @@ class CommentDetailViewSet(viewsets.ModelViewSet):
         """Updating user"""
         answer = Answer.objects.filter(id=self.request.data.get("answer")).first()
         serializer.save(user=self.request.user, answer=answer)
+
+
+class UpvotesViewSet(viewsets.GenericViewSet,
+                     mixins.CreateModelMixin):
+    """View set for upvote model"""
+    authentication_classes = [TokenAuthentication, ]
+
+    permission_classes = [IsAuthenticated, ]
+
+    serializer_class = serializers.UpvoteSerializer
+
+    queryset = Upvote.objects.all()
+
+    def get_queryset(self):
+        """Getting required viewset"""
+        user = self.request.user
+        return super(UpvotesViewSet, self).get_queryset().filter(user=user)
+
+    def get_object(self):
+        """Getting the object to update"""
+        queryset = self.get_queryset()
+        answer_id = self.request.data.get("answer", None)
+        question_id = self.request.data.get("question", None)
+        if answer_id is not None:
+            queryset.filter(answer__id=answer_id)
+        elif question_id is not None:
+            queryset.filter(question__id=question_id)
+        else:
+            return None
+        return queryset.first()
+
+    def create(self, request, *args, **kwargs):
+        upvote = self.get_object()
+        if upvote is not None:
+            upvote.has_upvoted = self.request.data.get('has_upvoted')
+            upvote.save()
+            return Response("Upvote updated", status=status.HTTP_200_OK)
+        else:
+            return Response("Provide answer or question", status=status.HTTP_400_BAD_REQUEST)

@@ -3,7 +3,7 @@ from django.contrib.auth import authenticate
 from rest_framework import serializers, status
 from rest_framework.response import Response
 
-from .models import User, Mentor, Student, Degree, University, Question, Answer, Comment
+from .models import User, Mentor, Student, Degree, University, Question, Answer, Comment, Upvote
 
 
 class DegreeSerializer(serializers.ModelSerializer):
@@ -229,7 +229,6 @@ class AnswerSerializer(serializers.ModelSerializer):
     comments = serializers.SerializerMethodField('get_comments')
     is_upvoted = serializers.SerializerMethodField('get_is_upvoted')
 
-
     def get_comments(self, obj):
         """Returning associated comments"""
         return MinCommentSerializer(Comment.objects.filter(answer=obj).all(), many=True).data
@@ -280,7 +279,17 @@ class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
         fields = ("id", "text", "created_at", "user", "answer")
-        read_only_fields = ('id',)
+        read_only_fields = ("id", "user")
 
 
+class UpvoteSerializer(serializers.ModelSerializer):
+    """Serializer for Upvote model"""
 
+    class Meta:
+        model = Upvote
+        fields = ("id", "answer", "question", "has_upvoted")
+        read_only_fields = ("id", "answer", "question")
+        extra_kwargs = {
+            "answer": {"required": False},
+            "question": {"required": False},
+        }
