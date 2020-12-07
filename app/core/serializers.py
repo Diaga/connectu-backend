@@ -1,7 +1,6 @@
 from django.contrib.auth import authenticate
 
-from rest_framework import serializers, status
-from rest_framework.response import Response
+from rest_framework import serializers
 
 from .models import User, Mentor, Student, Degree, University, Question, Answer, Comment, Upvote
 
@@ -170,7 +169,7 @@ class MinQuestionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Question
-        fields = ("id", "title", "user")
+        fields = ('id', 'title', 'user')
 
 
 class MinAnswerSerializer(serializers.ModelSerializer):
@@ -217,8 +216,8 @@ class QuestionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Question
         fields = ('id', 'title', 'text', 'created_at',
-                  'user', "answers", "upvotes_count",
-                  "is_upvoted")
+                  'user', 'answers', 'upvotes_count',
+                  'is_upvoted')
         read_only_fields = ('id',)
 
 
@@ -248,27 +247,27 @@ class AnswerSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Answer
-        fields = ('id', 'text', 'created_at', 'user', 'question', "comments", "is_upvoted")
+        fields = ('id', 'text', 'created_at', 'user', 'question', 'comments', 'is_upvoted', 'upvotes_count')
         read_only_fields = ('id',)
 
 
 class MinCommentSerializer(serializers.ModelSerializer):
     """Serializer for Comment model"""
-    user = serializers.SerializerMethodField("get_user")
+    user = serializers.SerializerMethodField('get_user')
 
     def get_user(self, obj):
         return UserSerializer(obj.user).data
 
     class Meta:
         model = Comment
-        fields = ("id", "text", "created_at", "user")
+        fields = ('id', 'text', 'created_at', 'user')
         read_only_fields = ('id',)
 
 
 class CommentSerializer(serializers.ModelSerializer):
     """Serializer for Comment model"""
-    user = serializers.SerializerMethodField("get_user")
-    answer = serializers.SerializerMethodField("get_answer")
+    user = serializers.SerializerMethodField('get_user')
+    answer = serializers.SerializerMethodField('get_answer')
 
     def get_user(self, obj):
         return UserSerializer(obj.user).data
@@ -278,8 +277,8 @@ class CommentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Comment
-        fields = ("id", "text", "created_at", "user", "answer")
-        read_only_fields = ("id", "user")
+        fields = ('id', 'text', 'created_at', 'user', 'answer')
+        read_only_fields = ('id', 'user')
 
 
 class UpvoteSerializer(serializers.ModelSerializer):
@@ -287,9 +286,9 @@ class UpvoteSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Upvote
-        fields = ("id", "answer", "question", "has_upvoted")
-        read_only_fields = ("id", "answer", "question")
+        fields = ('id', 'answer', 'question', 'has_upvoted')
+        read_only_fields = ('id', 'answer', 'question')
         extra_kwargs = {
-            "answer": {"required": False},
-            "question": {"required": False},
+            'answer': {'required': False},
+            'question': {'required': False},
         }
