@@ -35,13 +35,13 @@ class MentorSerializer(serializers.ModelSerializer):
         degree = validated_data.pop('degree', None)
         university = validated_data.pop('university', None)
 
-        mentor = super(MentorSerializer, self).create(validated_data)
-
         if degree is not None:
-            mentor.degree = Degree.objects.get(pk=degree)
+            validated_data['degree'] = Degree.objects.create(**degree)
 
         if university is not None:
-            mentor.university = University.objects.get(pk=university)
+            validated_data['university'] = University.objects.create(**university)
+
+        mentor = super(MentorSerializer, self).create(validated_data)
 
         mentor.save()
 
@@ -99,9 +99,11 @@ class UserSerializer(serializers.ModelSerializer):
         user = User.objects.create_user(**validated_data)
 
         if mentor is not None:
-            user.mentor = Mentor.objects.create(**mentor)
+            mentor_serializer = MentorSerializer(data=mentor)
+            if mentor_serializer.is_valid(raise_exception=True):
+                user.mentor = mentor_serializer.save(user=user)
         elif student is not None:
-            user.student = Student.objects.create(**student)
+            user.student = Student.objects.create(**student, user=user)
 
         user.save()
 
@@ -208,6 +210,9 @@ class QuestionSerializer(serializers.ModelSerializer):
     def get_is_upvoted(self, obj):
         """Return if the current user has upvoted"""
         user = self.context['request'].user
+        upvote_query = obj.upvotes.filter(user=user)
+        if not upvote_query.exists():
+            obj.upvotes.add(Upvote.objects.create(user=user, question=obj, has_upvoted=False))
         return obj.upvotes.filter(user=user).first().has_upvoted
 
     # def get_keyword(self, obj):
@@ -244,6 +249,9 @@ class AnswerSerializer(serializers.ModelSerializer):
     def get_is_upvoted(self, obj):
         """Return if the current user has upvoted"""
         user = self.context['request'].user
+        upvote_query = obj.upvotes.filter(user=user)
+        if not upvote_query.exists():
+            obj.upvotes.add(Upvote.objects.create(user=user, answer=obj, has_upvoted=False))
         return obj.upvotes.filter(user=user).first().has_upvoted
 
     class Meta:
