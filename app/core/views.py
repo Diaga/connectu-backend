@@ -3,7 +3,7 @@ from rest_framework.settings import api_settings
 
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
-from rest_framework import mixins, viewsets
+from rest_framework import viewsets
 
 from . import serializers
 from .models import Question
@@ -16,10 +16,8 @@ class AuthTokenViewSet(ObtainAuthToken):
     renderer_classes = api_settings.DEFAULT_RENDERER_CLASSES
 
 
-class QuestionViewSet(viewsets.GenericViewSet,
-                      mixins.CreateModelMixin,
-                      mixins.ListModelMixin):
-    """Creating viewset for Question model"""
+class QuestionDetailViewSet(viewsets.ModelViewSet):
+    """Model view set for question model"""
 
     authentication_classes = [TokenAuthentication, ]
 
@@ -32,13 +30,12 @@ class QuestionViewSet(viewsets.GenericViewSet,
     def get_queryset(self):
         """Enforcing Scope"""
         user = self.request.user
-        queryset = super(QuestionViewSet, self).get_queryset()
+        queryset = super(QuestionDetailViewSet, self).get_queryset()
         if user.is_mentor:
             queryset.all()
             #TODO: filtering on the basis of keywords
         elif not user.is_mentor:
             queryset.filter(user=user).all()
-
         return queryset.order_by('-created_at')
 
     def create_question(self, request, *args, **kwargs):
@@ -49,4 +46,3 @@ class QuestionViewSet(viewsets.GenericViewSet,
         text = self.request.data.get('text')
         # TODO: use this text for converting to keywords
         serializer.save(user=self.request.user)
-
