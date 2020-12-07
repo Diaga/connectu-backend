@@ -1,3 +1,5 @@
+from django.contrib.auth.models import AnonymousUser
+
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.response import Response
 from rest_framework.settings import api_settings
@@ -7,7 +9,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework import viewsets, mixins, status
 
 from . import serializers
-from .models import Question, Answer, Comment, Upvote, PairSession, Mentor
+from .models import Question, Answer, Comment, Upvote, User, PairSession, Mentor
 
 
 class AuthTokenViewSet(ObtainAuthToken):
@@ -15,6 +17,34 @@ class AuthTokenViewSet(ObtainAuthToken):
 
     serializer_class = serializers.AuthTokenSerializer
     renderer_classes = api_settings.DEFAULT_RENDERER_CLASSES
+
+class UserDetailViewSet(viewsets.ModelViewSet):
+
+    authentication_classes = [TokenAuthentication, ]
+
+    permission_classes = []
+
+    serializer_class = serializers.UserSerializer
+
+    queryset = User.objects.all()
+
+    def get_serializer_context(self):
+        """Returning context"""
+        return {
+            'request': self.request,
+            'format': self.format_kwarg,
+            'view': self
+        }
+
+    def get_queryset(self):
+        """Enforcing Scope"""
+        queryset = super(UserDetailViewSet, self).get_queryset()
+        is_me = self.request.GET.get('is_me', None)
+        if is_me is not None and not isinstance(self.request.user, AnonymousUser):
+            queryset = queryset.filter(
+                email=self.request.user.email
+            )
+        return queryset
 
 
 class QuestionDetailViewSet(viewsets.ModelViewSet):
