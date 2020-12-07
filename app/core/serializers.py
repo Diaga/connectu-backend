@@ -191,6 +191,7 @@ class QuestionSerializer(serializers.ModelSerializer):
     """Serializer for question model"""
     user = serializers.SerializerMethodField('get_user')
     answers = serializers.SerializerMethodField('get_answers')
+    is_upvoted = serializers.SerializerMethodField('get_is_upvoted')
 
     def get_answers(self, obj):
         """Returning the related answers"""
@@ -204,13 +205,20 @@ class QuestionSerializer(serializers.ModelSerializer):
         """Returning the related user"""
         return UserSerializer(obj.user).data
 
+    def get_is_upvoted(self, obj):
+        """Return if the current user has upvoted"""
+        user = self.context['request'].user
+        return obj.upvotes.filter(user=user).first().has_upvoted
+
     # def get_keyword(self, obj):
     #     """Returning the list of associated keywords"""
     #     return KeywordSerializer(obj.keywords.all(), many=True).data
 
     class Meta:
         model = Question
-        fields = ('id', 'title', 'text', 'created_at', 'user', "answers")
+        fields = ('id', 'title', 'text', 'created_at',
+                  'user', "answers", "upvotes_count",
+                  "is_upvoted")
         read_only_fields = ('id',)
 
 
@@ -218,7 +226,9 @@ class AnswerSerializer(serializers.ModelSerializer):
     """Serializer for Answer model"""
     user = serializers.SerializerMethodField('get_user')
     question = serializers.SerializerMethodField('get_question')
-    comments= serializers.SerializerMethodField('get_comments')
+    comments = serializers.SerializerMethodField('get_comments')
+    is_upvoted = serializers.SerializerMethodField('get_is_upvoted')
+
 
     def get_comments(self, obj):
         """Returning associated comments"""
@@ -232,9 +242,14 @@ class AnswerSerializer(serializers.ModelSerializer):
         """Returning the related question"""
         return MinQuestionSerializer(obj.question).data
 
+    def get_is_upvoted(self, obj):
+        """Return if the current user has upvoted"""
+        user = self.context['request'].user
+        return obj.upvotes.filter(user=user).first().has_upvoted
+
     class Meta:
         model = Answer
-        fields = ('id', 'text', 'created_at', 'user', 'question',"comments")
+        fields = ('id', 'text', 'created_at', 'user', 'question', "comments", "is_upvoted")
         read_only_fields = ('id',)
 
 
@@ -244,6 +259,7 @@ class MinCommentSerializer(serializers.ModelSerializer):
 
     def get_user(self, obj):
         return UserSerializer(obj.user).data
+
     class Meta:
         model = Comment
         fields = ("id", "text", "created_at", "user")
@@ -265,3 +281,6 @@ class CommentSerializer(serializers.ModelSerializer):
         model = Comment
         fields = ("id", "text", "created_at", "user", "answer")
         read_only_fields = ('id',)
+
+
+

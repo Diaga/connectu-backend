@@ -27,6 +27,14 @@ class QuestionDetailViewSet(viewsets.ModelViewSet):
 
     queryset = Question.objects.all()
 
+    def get_serializer_context(self):
+        """Returning context"""
+        return {
+            'request': self.request,
+            'format': self.format_kwarg,
+            'view': self
+        }
+
     def get_queryset(self):
         """Enforcing Scope"""
         user = self.request.user
@@ -55,6 +63,14 @@ class AnswerDetailViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.AnswerSerializer
 
     queryset = Answer.objects.all()
+
+    def get_serializer_context(self):
+        """Returning context"""
+        return {
+            'request': self.request,
+            'format': self.format_kwarg,
+            'view': self
+        }
 
     def get_queryset(self):
         """Enforcing Scope"""

@@ -141,7 +141,7 @@ class Question(models.Model):
 
     @property
     def upvotes_count(self):
-        return self.upvotes.count()
+        return self.upvotes.filter(has_upvoted=True).count()
 
     class Meta:
         app_label = 'core'
@@ -149,6 +149,26 @@ class Question(models.Model):
 
     def __str__(self):
         return f'{self.title} by {self.user.email}'
+
+    def save(self, force_insert=False, force_update=False, using=None,
+             update_fields=None):
+        """Create Upvote objects after creating new Question"""
+        super(Question, self).save(
+            force_insert=force_insert, force_update=force_update, using=using,
+            update_fields=update_fields
+        )
+
+        if len(self.upvotes.all()) == 0:
+
+            for user in User.objects.all():
+                Upvote.objects.get_or_create(
+                    question=self,
+                    user=user,
+                    answer=None
+                )
+
+        else:
+            raise AssertionError
 
 
 class Answer(models.Model):
@@ -164,7 +184,7 @@ class Answer(models.Model):
 
     @property
     def upvotes_count(self):
-        return self.upvotes.count()
+        return self.upvotes.filter(has_upvoted=True).count()
 
     class Meta:
         app_label = 'core'
@@ -172,6 +192,26 @@ class Answer(models.Model):
 
     def __str__(self):
         return f'{self.text} by {self.user.email}'
+
+    def save(self, force_insert=False, force_update=False, using=None,
+             update_fields=None):
+        """Create Upvote objects after creating new Question"""
+        super(Answer, self).save(
+            force_insert=force_insert, force_update=force_update, using=using,
+            update_fields=update_fields
+        )
+
+        if len(self.upvotes.all()) == 0:
+
+            for user in User.objects.all():
+                Upvote.objects.get_or_create(
+                    answer=self,
+                    user=user,
+                    question=None
+                )
+
+        else:
+            raise AssertionError
 
 
 class Comment(models.Model):
