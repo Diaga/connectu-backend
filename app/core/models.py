@@ -137,7 +137,7 @@ class Question(models.Model):
     created_at = models.DateTimeField(default=timezone.now)
 
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    keywords = models.ForeignKey(Keyword, on_delete=models.CASCADE)
+    keywords = models.ManyToManyField(Keyword)
 
     @property
     def upvotes_count(self):

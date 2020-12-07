@@ -2,7 +2,7 @@ from django.contrib.auth import authenticate
 
 from rest_framework import serializers
 
-from .models import User, Mentor, Student, Degree, University
+from .models import User, Mentor, Student, Degree, University, Question
 
 
 class DegreeSerializer(serializers.ModelSerializer):
@@ -162,3 +162,21 @@ class AuthTokenSerializer(serializers.Serializer):
 
         attrs['user'] = user
         return attrs
+
+
+class QuestionSerializer(serializers.ModelSerializer):
+    """Serializer for question model"""
+    user = serializers.SerializerMethodField('get_user')
+
+    def get_user(self, obj):
+        """Returning the related user"""
+        return UserSerializer(obj.user).data
+
+    # def get_keyword(self, obj):
+    #     """Returning the list of associated keywords"""
+    #     return KeywordSerializer(obj.keywords.all(), many=True).data
+
+    class Meta:
+        model = Question
+        fields = ('id', 'title', 'text', 'created_at', 'user')
+        read_only_fields = ('id', )
