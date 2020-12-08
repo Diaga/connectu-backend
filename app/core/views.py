@@ -11,11 +11,21 @@ from rest_framework import viewsets, mixins, status
 
 from . import serializers
 from .models import Question, Answer, Comment, Upvote, \
-    User, PairSession, Mentor, FeedbackForm, Appointment, Degree, Student, Keyword
+    User, PairSession, Mentor, FeedbackForm, Appointment, Degree, Student, Keyword, University
 
 import uuid
 
 
+class UniversityViewSet(viewsets.GenericViewSet,
+                        mixins.ListModelMixin):
+    """Returning the list of universities"""
+    authentication_classes = [TokenAuthentication, ]
+
+    permission_classes = [IsAuthenticated, ]
+
+    serializer_class = serializers.UniversitySerializer
+
+    queryset = University.objects.all()
 
 
 class AuthTokenViewSet(ObtainAuthToken):

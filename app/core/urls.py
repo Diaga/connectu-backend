@@ -5,6 +5,7 @@ from rest_framework.routers import DefaultRouter
 from . import views
 
 router = DefaultRouter()
+router.register(r'university', views.UniversityViewSet, basename='university')
 router.register(r'degree', views.DegreeDetailViewSet, basename='degree')
 router.register(r'user', views.UserDetailViewSet, basename='user')
 router.register(r'question', views.QuestionDetailViewSet, basename='question')
