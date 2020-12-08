@@ -6,7 +6,6 @@ from uuid import uuid4
 
 
 class Keyword(models.Model):
-
     id = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     name = models.CharField(max_length=255)
 
@@ -19,7 +18,6 @@ class Keyword(models.Model):
 
 
 class Degree(models.Model):
-
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
     name = models.CharField(max_length=255)
 
@@ -32,7 +30,6 @@ class Degree(models.Model):
 
 
 class University(models.Model):
-
     id = models.UUIDField(primary_key=True, editable=False, default=uuid4)
     name = models.CharField(max_length=255)
     location = models.CharField(max_length=255)
@@ -72,7 +69,6 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractBaseUser, PermissionsMixin):
-
     id = models.UUIDField(primary_key=True, editable=False, default=uuid4)
     email = models.CharField(max_length=255, unique=True)
     name = models.CharField(max_length=255)
@@ -99,7 +95,6 @@ class User(AbstractBaseUser, PermissionsMixin):
 
 
 class Mentor(models.Model):
-
     id = models.UUIDField(primary_key=True, editable=False, default=uuid4)
     is_professional = models.BooleanField(default=False)
     points = models.PositiveIntegerField(default=0)
@@ -116,7 +111,6 @@ class Mentor(models.Model):
 
 
 class Student(models.Model):
-
     id = models.UUIDField(primary_key=True, editable=False, default=uuid4)
 
     class Meta:
@@ -128,7 +122,6 @@ class Student(models.Model):
 
 
 class Question(models.Model):
-
     id = models.UUIDField(editable=False, primary_key=True, default=uuid4)
 
     title = models.CharField(max_length=255)
@@ -172,7 +165,6 @@ class Question(models.Model):
 
 
 class Answer(models.Model):
-
     id = models.UUIDField(editable=False, primary_key=True, default=uuid4)
 
     text = models.TextField()
@@ -215,7 +207,6 @@ class Answer(models.Model):
 
 
 class Comment(models.Model):
-
     id = models.UUIDField(default=uuid4, editable=False, primary_key=True)
 
     text = models.TextField()
@@ -234,7 +225,6 @@ class Comment(models.Model):
 
 
 class Upvote(models.Model):
-
     id = models.UUIDField(primary_key=True, editable=False, default=uuid4)
 
     has_upvoted = models.BooleanField(default=False)
@@ -252,7 +242,6 @@ class Upvote(models.Model):
 
 
 class FeedbackForm(models.Model):
-
     id = models.UUIDField(primary_key=True, editable=False, default=uuid4)
 
     student_satisfied_rating = models.PositiveSmallIntegerField(null=True)
@@ -273,7 +262,6 @@ class FeedbackForm(models.Model):
 
 
 class PairSession(models.Model):
-
     id = models.UUIDField(editable=False, default=uuid4, primary_key=True)
 
     price = models.FloatField(default=0)
@@ -295,7 +283,7 @@ class PairSession(models.Model):
 
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
-        """Create Upvote objects after creating new Answer"""
+        """Create feedback form objects after creating new PairSession"""
         if self.feedback_session is None:
             self.feedback_session = FeedbackForm.objects.create()
         else:
@@ -304,4 +292,47 @@ class PairSession(models.Model):
             force_insert=force_insert, force_update=force_update, using=using,
             update_fields=update_fields
         )
+
+
+class Appointment(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
+
+    url = models.CharField(max_length=255)
+    status = models.PositiveSmallIntegerField(default=0)
+
+    student = models.ForeignKey(Student, on_delete=models.CASCADE)
+    mentor = models.ForeignKey(Mentor, on_delete=models.CASCADE)
+
+    start_datetime = models.DateTimeField()
+    end_datetime = models.DateTimeField()
+    created_at = models.DateTimeField(default=timezone.now)
+
+    price = models.FloatField(default=0)
+
+    feedback_form = models.OneToOneField(FeedbackForm, on_delete=models.CASCADE,
+                                         null=True, blank=True)
+
+    class Meta:
+        app_label = 'core'
+        default_related_name = 'appointments'
+
+    def __str__(self):
+        return f'{self.mentor.user.email} paired with {self.student.user.email}'
+
+    def save(self, force_insert=False, force_update=False, using=None,
+             update_fields=None):
+        """Create feedback form objects after creating new Appointment"""
+        if self.feedback_form is None:
+            self.feedback_form = FeedbackForm.objects.create()
+            super(Appointment, self).save(
+                    force_insert=force_insert, force_update=force_update, using=using,
+                    update_fields=update_fields
+                )
+        else:
+            super(Appointment, self).save(
+                force_insert=force_insert, force_update=force_update, using=using,
+                update_fields=update_fields
+            )
+            return AssertionError
+
 

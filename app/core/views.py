@@ -9,7 +9,10 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework import viewsets, mixins, status
 
 from . import serializers
-from .models import Question, Answer, Comment, Upvote, User, PairSession, Mentor, FeedbackForm
+from .models import Question, Answer, Comment, Upvote, \
+    User, PairSession, Mentor, FeedbackForm, Appointment
+
+import uuid
 
 
 class AuthTokenViewSet(ObtainAuthToken):
@@ -273,3 +276,47 @@ class FeedbackFormViewSet(viewsets.GenericViewSet,
             return Response("Feedback form updated", status=status.HTTP_200_OK)
         else:
             return Response("Provide feedback form id", status=status.HTTP_400_BAD_REQUEST)
+
+
+class AppointmentViewSet(viewsets.GenericViewSet,
+                         mixins.CreateModelMixin,
+                         mixins.ListModelMixin):
+    """View set for appointment model"""
+
+    authentication_classes = [TokenAuthentication, ]
+
+    permission_classes = [IsAuthenticated, ]
+
+    serializer_class = serializers.AppointmentSerializer
+
+    queryset = Appointment.objects.all()
+
+    def get_queryset(self):
+        """Enforcing scope"""
+        user = self.request.user
+        queryset = super(AppointmentViewSet, self).get_queryset()
+        if user.is_mentor:
+            queryset.filter(mentor=user.mentor).all()
+        else:
+            queryset.filter(student=user.mentor).all()
+        return queryset.order_by("-created_at")
+
+    def create(self, request, *args, **kwargs):
+        """Overriding create method for custom response"""
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        mentor_id = self.request.data.get("mentor")
+        mentor = Mentor.objects.filter(id=mentor_id).first()
+        if mentor is not None:
+            if mentor.is_professional:
+                serializer.save(
+                    student=self.request.user.student,
+                    mentor=mentor, url=f"meet.jit.si/connectu.ml/{str(uuid.uuid4())}",
+                )
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            else:
+                return Response({'Message': 'Cannot register appointment'},
+                                status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({"Message": "Provide mentor id"},
+                            status=status.HTTP_400_BAD_REQUEST)

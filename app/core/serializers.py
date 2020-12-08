@@ -2,8 +2,9 @@ from django.contrib.auth import authenticate
 
 from rest_framework import serializers
 
-from .models import User, Mentor, Student, Degree, University, Question, Answer, Comment, Upvote, PairSession, \
-    FeedbackForm
+from .models import User, Mentor, Student, Degree, \
+    University, Question, Answer, Comment, Upvote, \
+    PairSession, FeedbackForm, Appointment
 
 
 class DegreeSerializer(serializers.ModelSerializer):
@@ -27,7 +28,8 @@ class MentorSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Mentor
-        fields = ('id', 'is_professional', 'points', 'degree', 'university')
+        fields = ('id', 'is_professional', 'points',
+                  'degree', 'university')
         read_only_fields = ('id', 'points',)
 
     def create(self, validated_data):
@@ -318,8 +320,10 @@ class PairSessionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = PairSession
-        fields = ("id", "price", "url", "created_at", "mentor", "student")
+        fields = ("id", "price", "url", "created_at", "mentor",
+                  "student", "feedback_session")
         read_only_fields = ("id",)
+        extra_kwargs = ("feedback_session",)
 
 
 class FeedbackFormSerializer(serializers.ModelSerializer):
@@ -330,4 +334,19 @@ class FeedbackFormSerializer(serializers.ModelSerializer):
         fields = ("id", "student_satisfied_rating", "mentor_satisfied_rating",
                   "has_student_reported", "has_mentor_reported", "student_comment",
                   "mentor_comment")
-        read_only_fields = ("id", )
+        read_only_fields = ("id",)
+
+
+class AppointmentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Appointment
+        fields = ("id", "student", "mentor", "url",
+                  "status", "start_datetime", "end_datetime",
+                  "created_at", "price", "feedback_form")
+        read_only_fields = ("id",)
+        extra_kwargs = {
+            "feedback_form": {"required": False},
+            "url": {"required": False},
+            "student": {"required": False}
+
+        }
