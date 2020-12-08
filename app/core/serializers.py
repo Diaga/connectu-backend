@@ -6,7 +6,6 @@ from .models import User, Mentor, Student, Degree, \
     University, Question, Answer, Comment, Upvote, \
     PairSession, FeedbackForm, Appointment
 
-
 class DegreeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Degree
@@ -57,10 +56,15 @@ class MentorSerializer(serializers.ModelSerializer):
         mentor = super(MentorSerializer, self).update(instance, validated_data)
 
         if degree is not None:
-            mentor.degree = Degree.objects.get(pk=degree)
+            degree_serializer = DegreeSerializer(data=degree, instance=Degree.objects.get(pk=degree['id']))
+            if degree_serializer.is_valid(raise_exception=True):
+                degree_serializer.save()
 
         if university is not None:
-            mentor.university = University.objects.get(pk=university)
+            university_serializer = UniversitySerializer(data=degree,
+                                                         instance=University.objects.get(pk=university['id']))
+            if university_serializer.is_valid(raise_exception=True):
+                university_serializer.save()
 
         mentor.save()
 
@@ -307,8 +311,8 @@ class UpvoteSerializer(serializers.ModelSerializer):
 
 class PairSessionSerializer(serializers.ModelSerializer):
     """Serializer for Paired Session"""
-    mentor = serializers.SerializerMethodField("get_mentor")
-    student = serializers.SerializerMethodField("get_student")
+    mentor = serializers.SerializerMethodField('get_mentor')
+    student = serializers.SerializerMethodField('get_student')
 
     def get_student(self, obj):
         """Return the related student user"""
