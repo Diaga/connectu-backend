@@ -18,6 +18,6 @@ router.register(r'appointment', views.AppointmentViewSet, basename='appointment'
 app_name = 'core'
 
 urlpatterns = [
-    path('token/', views.ObtainAuthToken.as_view(), name='auth-token'),
+    path('token/', views.AuthTokenViewSet.as_view(), name='auth-token'),
     path('core/', include(router.urls)),
 ]

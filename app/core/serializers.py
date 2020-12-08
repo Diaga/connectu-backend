@@ -20,30 +20,40 @@ class UniversitySerializer(serializers.ModelSerializer):
     class Meta:
         model = University
         fields = ('id', 'name', 'location', 'degrees')
+        extra_kwargs = {
+            'location': {'required': False}
+        }
 
 
 class MentorSerializer(serializers.ModelSerializer):
-    degree = DegreeSerializer()
+    degree = serializers.UUIDField(write_only=True)
+    degree_data = DegreeSerializer(read_only=True)
     university = UniversitySerializer()
 
     class Meta:
         model = Mentor
-        fields = ('id', 'is_professional', 'points',
-                  'degree', 'university')
+        fields = ('id', 'is_professional', 'points', 'user',
+                  'degree', 'university', 'degree_data')
         read_only_fields = ('id', 'points',)
+        extra_kwargs = {
+            'user': {
+                'write_only': True,
+                'required': False
+            }
+        }
 
     def create(self, validated_data):
 
         degree = validated_data.pop('degree', None)
         university = validated_data.pop('university', None)
 
+        mentor = super(MentorSerializer, self).create(validated_data)
+
         if degree is not None:
-            validated_data['degree'] = Degree.objects.create(**degree)
+            mentor.degree = Degree.objects.get(pk=degree)
 
         if university is not None:
-            validated_data['university'] = University.objects.create(**university)
-
-        mentor = super(MentorSerializer, self).create(validated_data)
+            mentor.university = University.objects.create(**university)
 
         mentor.save()
 
@@ -51,7 +61,7 @@ class MentorSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
 
-        degree = validated_data.pop('degree', None)
+        degree = validated_data.pop('degree_data', None)
         university = validated_data.pop('university', None)
 
         mentor = super(MentorSerializer, self).update(instance, validated_data)

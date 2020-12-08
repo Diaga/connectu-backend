@@ -105,8 +105,8 @@ class Mentor(models.Model):
     is_professional = models.BooleanField(default=False)
     points = models.PositiveIntegerField(default=0)
 
-    degree = models.ForeignKey(Degree, on_delete=models.CASCADE)
-    university = models.ForeignKey(University, on_delete=models.CASCADE)
+    degree = models.ForeignKey(Degree, on_delete=models.CASCADE, null=True)
+    university = models.ForeignKey(University, on_delete=models.CASCADE, null=True)
 
     class Meta:
         app_label = 'core'
@@ -123,9 +123,6 @@ class Student(models.Model):
     class Meta:
         app_label = 'core'
         default_related_name = 'students'
-
-    def __str__(self):
-        return f'{self.user.email} Student'
 
 
 class Question(models.Model):
@@ -347,5 +344,3 @@ class Appointment(models.Model):
                 update_fields=update_fields
             )
             return AssertionError
-
-
