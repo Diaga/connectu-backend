@@ -120,6 +120,10 @@ class Student(models.Model):
 
     id = models.UUIDField(primary_key=True, editable=False, default=uuid4)
 
+    degree1 = models.ForeignKey(Degree, related_name="degree1", on_delete=models.SET_NULL, null=True)
+    degree2 = models.ForeignKey(Degree, related_name="degree2", on_delete=models.SET_NULL, null=True)
+    degree3 = models.ForeignKey(Degree, related_name="degree3", on_delete=models.SET_NULL, null=True)
+
     class Meta:
         app_label = 'core'
         default_related_name = 'students'

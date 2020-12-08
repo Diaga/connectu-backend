@@ -1,4 +1,5 @@
 from django.contrib.auth.models import AnonymousUser
+from django.db.models import Count
 
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.response import Response
@@ -10,9 +11,11 @@ from rest_framework import viewsets, mixins, status
 
 from . import serializers
 from .models import Question, Answer, Comment, Upvote, \
-    User, PairSession, Mentor, FeedbackForm, Appointment, Degree
+    User, PairSession, Mentor, FeedbackForm, Appointment, Degree, Student, Keyword
 
 import uuid
+
+
 
 
 class AuthTokenViewSet(ObtainAuthToken):
@@ -23,7 +26,6 @@ class AuthTokenViewSet(ObtainAuthToken):
 
 
 class DegreeDetailViewSet(viewsets.ModelViewSet):
-
     authentication_classes = [TokenAuthentication, ]
 
     permission_classes = []
@@ -339,3 +341,64 @@ class AppointmentViewSet(viewsets.GenericViewSet,
         else:
             return Response({'Message': 'Provide mentor id'},
                             status=status.HTTP_400_BAD_REQUEST)
+
+
+class AboutMeViewSet(viewsets.GenericViewSet,
+                     mixins.UpdateModelMixin):
+    """View set for assigning top 3 degrees based on the test"""
+
+    authentication_classes = [TokenAuthentication, ]
+
+    permission_classes = [IsAuthenticated, ]
+
+    serializer_class = serializers.DegreeSerializer
+
+    queryset = Student.objects.all()
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = super(AboutMeViewSet, self).get_queryset().filter(id=user.student.id)
+        return queryset
+
+    def update(self, request, *args, **kwargs):
+        """Updating student model for the required degrees"""
+        about_me_text_1 = self.request.data.get("about_me_1").split(" ")
+        about_me_text_2 = self.request.data.get("about_me_2").split(" ")
+        about_me_text_3 = self.request.data.get("about_me_3").split(" ")
+        result = {}
+        for word in about_me_text_1:
+            keywords = Keyword.objects.filter(name__icontains=word). \
+                           values("degree").annotate(total=Count('id')).order_by('-total')[:3]
+            for k in keywords:
+                if str(k['degree']) not in result:
+                    result[str(k['degree'])] = k['total']
+                else:
+                    result[str(k['degree'])] += k['total']
+        for word in about_me_text_2:
+            keywords = Keyword.objects.filter(name__icontains=word). \
+                           values("degree").annotate(total=Count('id')).order_by('-total')[:3]
+            for k in keywords:
+                if str(k['degree']) not in result:
+                    result[str(k['degree'])] = k['total']
+                else:
+                    result[str(k['degree'])] += k['total']
+        for word in about_me_text_3:
+            keywords = Keyword.objects.filter(name__icontains=word). \
+                           values("degree").annotate(total=Count('id')).order_by('-total')[:3]
+            for k in keywords:
+                if str(k['degree']) not in result:
+                    result[str(k['degree'])] = k['total']
+                else:
+                    result[str(k['degree'])] += k['total']
+        sorted(result.values())
+        degrees_id_list = list(result.keys())
+        deg = Degree.objects.filter(id__in=degrees_id_list).all()[:3]
+        if len(degrees_id_list)<3:
+            deg = Degree.objects.all().order_by("?")[:3]
+        serializer = self.get_serializer(deg, many=True)
+        student = self.get_queryset().first()
+        student.degree1 = deg[0]
+        student.degree2 = deg[1]
+        student.degree3 = deg[2]
+        student.save()
+        return Response(serializer.data)
