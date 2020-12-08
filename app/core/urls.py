@@ -17,6 +17,7 @@ router.register(r'feedback', views.FeedbackFormViewSet, basename='feedback')
 router.register(r'appointment', views.AppointmentViewSet, basename='appointment')
 router.register(r'about_me', views.AboutMeViewSet, basename='about_me')
 router.register(r'mentor_pair', views.MentorPairStudentViewSet, basename='mentor_pair')
+router.register(r'notification', views.NotificationViewSet, basename='notification')
 
 app_name = 'core'
 

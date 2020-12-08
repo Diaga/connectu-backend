@@ -11,7 +11,7 @@ from rest_framework import viewsets, mixins, status
 
 from . import serializers
 from .models import Question, Answer, Comment, Upvote, \
-    User, PairSession, Mentor, FeedbackForm, Appointment, Degree, Student, Keyword, University
+    User, PairSession, Mentor, FeedbackForm, Appointment, Degree, Student, Keyword, University, Notification
 
 import uuid
 
@@ -444,3 +444,28 @@ class MentorPairStudentViewSet(viewsets.GenericViewSet,
             queryset = mentor_1 | mentor_2 | mentor_3
 
             return queryset
+
+
+class NotificationViewSet(viewsets.GenericViewSet,
+                          mixins.ListModelMixin,
+                          mixins.UpdateModelMixin):
+    """Model view set for notifications"""
+
+    authentication_classes = [TokenAuthentication, ]
+
+    permission_classes = [IsAuthenticated, ]
+
+    serializer_class = serializers.NotificationSerializer
+
+    queryset = Notification.objects.all()
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = super(NotificationViewSet, self).get_queryset(). \
+            filter(user=user). \
+            order_by('-created_at', 'is_seen')
+        return queryset
+
+    def update(self, request, *args, **kwargs):
+        kwargs['partial'] = True
+        return super(NotificationViewSet, self).update(request, *args, **kwargs)

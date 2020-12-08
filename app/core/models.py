@@ -289,7 +289,8 @@ class PairSession(models.Model):
     mentor = models.ForeignKey(Mentor, on_delete=models.CASCADE)
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
 
-    feedback_session = models.OneToOneField(FeedbackForm, on_delete=models.CASCADE, null=True, blank=True)
+    feedback_session = models.OneToOneField(FeedbackForm, on_delete=models.CASCADE,
+                                            null=True, blank=True)
 
     class Meta:
         app_label = 'core'
@@ -303,6 +304,11 @@ class PairSession(models.Model):
         """Create feedback form objects after creating new PairSession"""
         if self.feedback_session is None:
             self.feedback_session = FeedbackForm.objects.create()
+            Notification.objects.create(
+                user=self.mentor.user,
+                title=f'Mentoring session request by {self.student.user.name} at {self.url}',
+                feedback_form=self.feedback_session
+            )
         else:
             return AssertionError
         super(PairSession, self).save(
@@ -353,3 +359,20 @@ class Appointment(models.Model):
             return AssertionError
 
 
+class Notification(models.Model):
+    id = models.UUIDField(default=uuid4, editable=False, primary_key=True)
+
+    feedback_form = models.ForeignKey(FeedbackForm, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    title = models.CharField(max_length=255,null=True, blank=True)
+    is_seen = models.BooleanField(default=False)
+
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        app_label = 'core'
+        default_related_name = 'notifications'
+
+    def __str__(self):
+        return f'{self.title} for {self.user.name}'
