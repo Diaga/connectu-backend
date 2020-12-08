@@ -9,6 +9,7 @@ class Keyword(models.Model):
 
     id = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     name = models.CharField(max_length=255)
+    degree = models.ForeignKey('Degree', on_delete=models.CASCADE)
 
     class Meta:
         app_label = 'core'
@@ -306,5 +307,3 @@ class PairSession(models.Model):
             force_insert=force_insert, force_update=force_update, using=using,
             update_fields=update_fields
         )
-
-
