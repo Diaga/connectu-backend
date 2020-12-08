@@ -189,8 +189,8 @@ class UpvotesViewSet(viewsets.GenericViewSet,
 
             if upvote.has_upvoted:
                 if user.is_mentor:
-                    user.points += 5
-                    user.save()
+                    user.mentor.points += 5
+                    user.mentor.save()
 
             upvote.save()
             return Response("Upvote updated", status=status.HTTP_200_OK)
