@@ -4,7 +4,7 @@ from rest_framework import serializers
 
 from .models import User, Mentor, Student, Degree, \
     University, Question, Answer, Comment, Upvote, \
-    PairSession, FeedbackForm, Appointment
+    PairSession, FeedbackForm, Appointment, Notification
 
 
 class DegreeSerializer(serializers.ModelSerializer):
@@ -365,3 +365,14 @@ class AppointmentSerializer(serializers.ModelSerializer):
             'student': {'required': False}
 
         }
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    feedback_form = FeedbackFormSerializer()
+    user = UserSerializer()
+
+    class Meta:
+        model = Notification
+        fields = ('id', 'title', 'feedback_form', 'user',
+                  'is_seen', 'created_at')
+        read_only_fields = ('id', 'created_at')

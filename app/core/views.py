@@ -1,4 +1,5 @@
 from django.contrib.auth.models import AnonymousUser
+from django.db.models import Count
 
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.response import Response
@@ -10,9 +11,21 @@ from rest_framework import viewsets, mixins, status
 
 from . import serializers
 from .models import Question, Answer, Comment, Upvote, \
-    User, PairSession, Mentor, FeedbackForm, Appointment, Degree
+    User, PairSession, Mentor, FeedbackForm, Appointment, Degree, Student, Keyword, University, Notification
 
 import uuid
+
+
+class UniversityViewSet(viewsets.GenericViewSet,
+                        mixins.ListModelMixin):
+    """Returning the list of universities"""
+    authentication_classes = [TokenAuthentication, ]
+
+    permission_classes = [IsAuthenticated, ]
+
+    serializer_class = serializers.UniversitySerializer
+
+    queryset = University.objects.all()
 
 
 class AuthTokenViewSet(ObtainAuthToken):
@@ -23,7 +36,6 @@ class AuthTokenViewSet(ObtainAuthToken):
 
 
 class DegreeDetailViewSet(viewsets.ModelViewSet):
-
     authentication_classes = [TokenAuthentication, ]
 
     permission_classes = []
@@ -273,6 +285,7 @@ class FeedbackFormViewSet(viewsets.GenericViewSet,
     def create(self, request, *args, **kwargs):
         feedback_obj = self.get_object()
         if feedback_obj is not None:
+
             student_satisfied_rating = self.request.data.get('student_satisfied_rating', None)
             mentor_satisfied_rating = self.request.data.get('mentor_satisfied_rating', None)
             has_student_reported = self.request.data.get('has_student_reported', None)
@@ -291,6 +304,18 @@ class FeedbackFormViewSet(viewsets.GenericViewSet,
                 feedback_obj.student_comment = student_comment
             if mentor_comment is not None:
                 feedback_obj.mentor_comment = mentor_comment
+
+            user = self.request.user
+            if user.is_mentor:
+                pair_session = PairSession.objects.filter(feedback_session=feedback_obj).first()
+                Notification.objects.create(
+                    user=pair_session.student.user,
+                    title=f'Give feedback form for mentoring session with {user.name}',
+                    feedback_form=feedback_obj
+                )
+                user.mentor.points += 50
+                user.mentor.save()
+
             feedback_obj.save()
             return Response('Feedback form updated', status=status.HTTP_200_OK)
         else:
@@ -339,3 +364,121 @@ class AppointmentViewSet(viewsets.GenericViewSet,
         else:
             return Response({'Message': 'Provide mentor id'},
                             status=status.HTTP_400_BAD_REQUEST)
+
+
+class AboutMeViewSet(viewsets.GenericViewSet,
+                     mixins.UpdateModelMixin):
+    """View set for assigning top 3 degrees based on the test"""
+
+    authentication_classes = [TokenAuthentication, ]
+
+    permission_classes = [IsAuthenticated, ]
+
+    serializer_class = serializers.DegreeSerializer
+
+    queryset = Student.objects.all()
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = super(AboutMeViewSet, self).get_queryset().filter(id=user.student.id)
+        return queryset
+
+    def update(self, request, *args, **kwargs):
+        """Updating student model for the required degrees"""
+        about_me_text_1 = self.request.data.get("about_me_1").split(" ")
+        about_me_text_2 = self.request.data.get("about_me_2").split(" ")
+        about_me_text_3 = self.request.data.get("about_me_3").split(" ")
+        result = {}
+        for word in about_me_text_1:
+            keywords = Keyword.objects.filter(name__icontains=word). \
+                           values("degree").annotate(total=Count('id')).order_by('-total')[:3]
+            for k in keywords:
+                if str(k['degree']) not in result:
+                    result[str(k['degree'])] = k['total']
+                else:
+                    result[str(k['degree'])] += k['total']
+        for word in about_me_text_2:
+            keywords = Keyword.objects.filter(name__icontains=word). \
+                           values("degree").annotate(total=Count('id')).order_by('-total')[:3]
+            for k in keywords:
+                if str(k['degree']) not in result:
+                    result[str(k['degree'])] = k['total']
+                else:
+                    result[str(k['degree'])] += k['total']
+        for word in about_me_text_3:
+            keywords = Keyword.objects.filter(name__icontains=word). \
+                           values("degree").annotate(total=Count('id')).order_by('-total')[:3]
+            for k in keywords:
+                if str(k['degree']) not in result:
+                    result[str(k['degree'])] = k['total']
+                else:
+                    result[str(k['degree'])] += k['total']
+        sorted(result.values())
+        degrees_id_list = list(result.keys())
+        deg = Degree.objects.filter(id__in=degrees_id_list).all()[:3]
+        if len(degrees_id_list) < 3:
+            deg = Degree.objects.all().order_by("?")[:3]
+        serializer = self.get_serializer(deg, many=True)
+        student = self.get_queryset().first()
+        student.degree1 = deg[0]
+        student.degree2 = deg[1]
+        student.degree3 = deg[2]
+        student.save()
+        return Response(serializer.data)
+
+
+class MentorPairStudentViewSet(viewsets.GenericViewSet,
+                               mixins.ListModelMixin):
+    """Return a mentor pair for student"""
+    authentication_classes = [TokenAuthentication, ]
+
+    permission_classes = [IsAuthenticated, ]
+
+    serializer_class = serializers.UserSerializer
+
+    queryset = User.objects.filter(mentor__isnull=False)
+
+    def get_queryset(self):
+        """Enforcing scope"""
+        user = self.request.user
+        queryset = super(MentorPairStudentViewSet, self).get_queryset()
+        if user.is_mentor:
+            return None
+        else:
+            degree_id_1 = self.request.data.get('degree1', None)
+            degree_id_2 = self.request.data.get('degree2', None)
+            degree_id_3 = self.request.data.get('degree3', None)
+            if degree_id_1 is not None:
+                mentor_1 = queryset.filter(mentor__degree__id=degree_id_1).all().order_by('?')[:1]
+            if degree_id_2 is not None:
+                mentor_2 = queryset.filter(mentor__degree__id=degree_id_2).all().order_by('?')[:1]
+            if degree_id_3 is not None:
+                mentor_3 = queryset.filter(mentor__degree__id=degree_id_3).all().order_by('?')[:1]
+            queryset = mentor_1 | mentor_2 | mentor_3
+
+            return queryset
+
+
+class NotificationViewSet(viewsets.GenericViewSet,
+                          mixins.ListModelMixin,
+                          mixins.UpdateModelMixin):
+    """Model view set for notifications"""
+
+    authentication_classes = [TokenAuthentication, ]
+
+    permission_classes = [IsAuthenticated, ]
+
+    serializer_class = serializers.NotificationSerializer
+
+    queryset = Notification.objects.all()
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = super(NotificationViewSet, self).get_queryset(). \
+            filter(user=user). \
+            order_by('-created_at', 'is_seen')
+        return queryset
+
+    def update(self, request, *args, **kwargs):
+        kwargs['partial'] = True
+        return super(NotificationViewSet, self).update(request, *args, **kwargs)
