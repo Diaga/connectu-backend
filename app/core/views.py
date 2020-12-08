@@ -313,6 +313,9 @@ class FeedbackFormViewSet(viewsets.GenericViewSet,
                     title=f'Give feedback form for mentoring session with {user.name}',
                     feedback_form=feedback_obj
                 )
+                user.mentor.points += 50
+                user.mentor.save()
+
             feedback_obj.save()
             return Response('Feedback form updated', status=status.HTTP_200_OK)
         else:
