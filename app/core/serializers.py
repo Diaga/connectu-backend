@@ -323,10 +323,6 @@ class PairSessionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = PairSession
-<<<<<<< HEAD
-        fields = ('id', 'price', 'url', 'created_at', 'mentor', 'student')
-        read_only_fields = ('id',)
-=======
         fields = ('id', 'price', 'url', 'created_at', 'mentor', 'student')
         read_only_fields = ('id',)
 
@@ -340,4 +336,3 @@ class FeedbackFormSerializer(serializers.ModelSerializer):
                   'has_student_reported', 'has_mentor_reported', 'student_comment',
                   'mentor_comment')
         read_only_fields = ('id', )
->>>>>>> 1aeec0389227f3464bcd1a927083d4156e8b7f62
