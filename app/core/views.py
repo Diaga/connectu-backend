@@ -403,7 +403,7 @@ class AboutMeViewSet(viewsets.GenericViewSet,
         sorted(result.values())
         degrees_id_list = list(result.keys())
         deg = Degree.objects.filter(id__in=degrees_id_list).all()[:3]
-        if len(degrees_id_list)<3:
+        if len(degrees_id_list) < 3:
             deg = Degree.objects.all().order_by("?")[:3]
         serializer = self.get_serializer(deg, many=True)
         student = self.get_queryset().first()
@@ -412,3 +412,35 @@ class AboutMeViewSet(viewsets.GenericViewSet,
         student.degree3 = deg[2]
         student.save()
         return Response(serializer.data)
+
+
+class MentorPairStudentViewSet(viewsets.GenericViewSet,
+                               mixins.ListModelMixin):
+    """Return a mentor pair for student"""
+    authentication_classes = [TokenAuthentication, ]
+
+    permission_classes = [IsAuthenticated, ]
+
+    serializer_class = serializers.UserSerializer
+
+    queryset = User.objects.filter(mentor__isnull=False)
+
+    def get_queryset(self):
+        """Enforcing scope"""
+        user = self.request.user
+        queryset = super(MentorPairStudentViewSet, self).get_queryset()
+        if user.is_mentor:
+            return None
+        else:
+            degree_id_1 = self.request.data.get('degree1', None)
+            degree_id_2 = self.request.data.get('degree2', None)
+            degree_id_3 = self.request.data.get('degree3', None)
+            if degree_id_1 is not None:
+                mentor_1 = queryset.filter(mentor__degree__id=degree_id_1).all().order_by('?')[:1]
+            if degree_id_2 is not None:
+                mentor_2 = queryset.filter(mentor__degree__id=degree_id_2).all().order_by('?')[:1]
+            if degree_id_3 is not None:
+                mentor_3 = queryset.filter(mentor__degree__id=degree_id_3).all().order_by('?')[:1]
+            queryset = mentor_1 | mentor_2 | mentor_3
+
+            return queryset
