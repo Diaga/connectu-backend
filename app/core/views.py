@@ -285,6 +285,7 @@ class FeedbackFormViewSet(viewsets.GenericViewSet,
     def create(self, request, *args, **kwargs):
         feedback_obj = self.get_object()
         if feedback_obj is not None:
+
             student_satisfied_rating = self.request.data.get('student_satisfied_rating', None)
             mentor_satisfied_rating = self.request.data.get('mentor_satisfied_rating', None)
             has_student_reported = self.request.data.get('has_student_reported', None)
@@ -303,6 +304,15 @@ class FeedbackFormViewSet(viewsets.GenericViewSet,
                 feedback_obj.student_comment = student_comment
             if mentor_comment is not None:
                 feedback_obj.mentor_comment = mentor_comment
+
+            user = self.request.user
+            if user.is_mentor:
+                pair_session = PairSession.objects.filter(feedback_session=feedback_obj).first()
+                Notification.objects.create(
+                    user=pair_session.student.user,
+                    title=f'Give feedback form for mentoring session with {user.name}',
+                    feedback_form=feedback_obj
+                )
             feedback_obj.save()
             return Response('Feedback form updated', status=status.HTTP_200_OK)
         else:
