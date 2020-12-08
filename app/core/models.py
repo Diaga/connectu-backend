@@ -299,8 +299,6 @@ class PairSession(models.Model):
         """Create Upvote objects after creating new Answer"""
         if self.feedback_session is None:
             self.feedback_session = FeedbackForm.objects.create()
-
-
         else:
             return AssertionError
         super(PairSession, self).save(

@@ -11,6 +11,8 @@ router.register(r"answer", views.AnswerDetailViewSet, basename="answer")
 router.register(r"comment", views.CommentDetailViewSet, basename="comment")
 router.register(r"upvote", views.UpvotesViewSet, basename="upvote")
 router.register(r"session", views.PairSessionViewSet, basename="session")
+router.register(r"feedback", views.FeedbackFormViewSet, basename="feedback")
+
 app_name = "core"
 
 urlpatterns = [

@@ -9,7 +9,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework import viewsets, mixins, status
 
 from . import serializers
-from .models import Question, Answer, Comment, Upvote, User, PairSession, Mentor
+from .models import Question, Answer, Comment, Upvote, User, PairSession, Mentor, FeedbackForm
 
 
 class AuthTokenViewSet(ObtainAuthToken):
@@ -18,8 +18,8 @@ class AuthTokenViewSet(ObtainAuthToken):
     serializer_class = serializers.AuthTokenSerializer
     renderer_classes = api_settings.DEFAULT_RENDERER_CLASSES
 
-class UserDetailViewSet(viewsets.ModelViewSet):
 
+class UserDetailViewSet(viewsets.ModelViewSet):
     authentication_classes = [TokenAuthentication, ]
 
     permission_classes = []
@@ -189,8 +189,8 @@ class UpvotesViewSet(viewsets.GenericViewSet,
 
             if upvote.has_upvoted:
                 if user.is_mentor:
-                    user.points += 5
-                    user.save()
+                    user.mentor.points += 5
+                    user.mentor.save()
 
             upvote.save()
             return Response("Upvote updated", status=status.HTTP_200_OK)
@@ -222,6 +222,54 @@ class PairSessionViewSet(viewsets.GenericViewSet,
 
     def perform_create(self, serializer):
         mentor_id = self.request.data.get("mentor")
-        serializer.save(student=self.request.user.student, mentor=Mentor.objects.filter(id=mentor_id).first())
+        serializer.save(
+            student=self.request.user.student,
+            mentor=Mentor.objects.filter(id=mentor_id).first()
+        )
 
 
+class FeedbackFormViewSet(viewsets.GenericViewSet,
+                          mixins.CreateModelMixin):
+    """Update feedback form after paired session"""
+
+    authentication_classes = [TokenAuthentication, ]
+
+    permission_classes = [IsAuthenticated, ]
+
+    serializer_class = serializers.FeedbackFormSerializer
+
+    queryset = FeedbackForm.objects.all()
+
+    def get_object(self):
+        """Getting the object to update"""
+        feedback_form_id = self.request.data.get("feedback_form")
+        if feedback_form_id is not None:
+            return FeedbackForm.objects.get(id=feedback_form_id)
+        else:
+            return None
+
+    def create(self, request, *args, **kwargs):
+        feedback_obj = self.get_object()
+        if feedback_obj is not None:
+            student_satisfied_rating = self.request.data.get('student_satisfied_rating', None)
+            mentor_satisfied_rating = self.request.data.get('mentor_satisfied_rating', None)
+            has_student_reported = self.request.data.get('has_student_reported', None)
+            has_mentor_reported = self.request.data.get('has_mentor_reported', None)
+            student_comment = self.request.data.get('student_comment', None)
+            mentor_comment = self.request.data.get('mentor_comment', None)
+            if student_satisfied_rating is not None:
+                feedback_obj.student_satisfied_rating = student_satisfied_rating
+            if mentor_satisfied_rating is not None:
+                feedback_obj.mentor_satisfied_rating = mentor_satisfied_rating
+            if has_student_reported is not None:
+                feedback_obj.has_student_reported = has_student_reported
+            if has_mentor_reported is not None:
+                feedback_obj.has_mentor_reported = has_mentor_reported
+            if student_comment is not None:
+                feedback_obj.student_comment = student_comment
+            if mentor_comment is not None:
+                feedback_obj.mentor_comment = mentor_comment
+            feedback_obj.save()
+            return Response("Feedback form updated", status=status.HTTP_200_OK)
+        else:
+            return Response("Provide feedback form id", status=status.HTTP_400_BAD_REQUEST)

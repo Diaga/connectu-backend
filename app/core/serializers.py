@@ -2,7 +2,8 @@ from django.contrib.auth import authenticate
 
 from rest_framework import serializers
 
-from .models import User, Mentor, Student, Degree, University, Question, Answer, Comment, Upvote, PairSession
+from .models import User, Mentor, Student, Degree, University, Question, Answer, Comment, Upvote, PairSession, \
+    FeedbackForm
 
 
 class DegreeSerializer(serializers.ModelSerializer):
@@ -322,5 +323,21 @@ class PairSessionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = PairSession
+<<<<<<< HEAD
         fields = ('id', 'price', 'url', 'created_at', 'mentor', 'student')
         read_only_fields = ('id',)
+=======
+        fields = ('id', 'price', 'url', 'created_at', 'mentor', 'student')
+        read_only_fields = ('id',)
+
+
+class FeedbackFormSerializer(serializers.ModelSerializer):
+    """Serializer for feedback form"""
+
+    class Meta:
+        model = FeedbackForm
+        fields = ('id', 'student_satisfied_rating', 'mentor_satisfied_rating',
+                  'has_student_reported', 'has_mentor_reported', 'student_comment',
+                  'mentor_comment')
+        read_only_fields = ('id', )
+>>>>>>> 1aeec0389227f3464bcd1a927083d4156e8b7f62
