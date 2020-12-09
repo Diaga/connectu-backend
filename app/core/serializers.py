@@ -83,9 +83,14 @@ class MentorSerializer(serializers.ModelSerializer):
 
 
 class StudentSerializer(serializers.ModelSerializer):
+
+    degree1 = DegreeSerializer(read_only=True)
+    degree2 = DegreeSerializer(read_only=True)
+    degree3 = DegreeSerializer(read_only=True)
+
     class Meta:
         model = Student
-        fields = ('id',)
+        fields = ('id', 'degree1', 'degree2', 'degree3')
         read_only_fields = ('id',)
 
 
@@ -102,7 +107,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('id', 'email', 'password', 'mentor', 'student', 'is_mentor')
+        fields = ('id', 'email', 'password', 'mentor', 'student', 'is_mentor', 'name')
         read_only_fields = ('id',)
 
     def create(self, validated_data):
@@ -216,7 +221,7 @@ class QuestionSerializer(serializers.ModelSerializer):
         """Returning the related answers"""
         answers = Answer.objects.filter(question=obj)
         if answers.count() > 0:
-            return MinAnswerSerializer(answers, many=True).data
+            return AnswerSerializer(answers, many=True, context={'request': self.context['request']}).data
         else:
             return None
 

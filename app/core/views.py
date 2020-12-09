@@ -385,13 +385,13 @@ class AboutMeViewSet(viewsets.GenericViewSet,
 
     def update(self, request, *args, **kwargs):
         """Updating student model for the required degrees"""
-        about_me_text_1 = self.request.data.get("about_me_1").split(" ")
-        about_me_text_2 = self.request.data.get("about_me_2").split(" ")
-        about_me_text_3 = self.request.data.get("about_me_3").split(" ")
+        about_me_text_1 = self.request.data.get('answer_1').split(' ')
+        about_me_text_2 = self.request.data.get('answer_2').split(' ')
+        about_me_text_3 = self.request.data.get('answer_3').split(' ')
         result = {}
         for word in about_me_text_1:
             keywords = Keyword.objects.filter(name__icontains=word). \
-                           values("degree").annotate(total=Count('id')).order_by('-total')[:3]
+                           values('degree').annotate(total=Count('id')).order_by('-total')[:3]
             for k in keywords:
                 if str(k['degree']) not in result:
                     result[str(k['degree'])] = k['total']
@@ -399,7 +399,7 @@ class AboutMeViewSet(viewsets.GenericViewSet,
                     result[str(k['degree'])] += k['total']
         for word in about_me_text_2:
             keywords = Keyword.objects.filter(name__icontains=word). \
-                           values("degree").annotate(total=Count('id')).order_by('-total')[:3]
+                           values('degree').annotate(total=Count('id')).order_by('-total')[:3]
             for k in keywords:
                 if str(k['degree']) not in result:
                     result[str(k['degree'])] = k['total']
@@ -407,7 +407,7 @@ class AboutMeViewSet(viewsets.GenericViewSet,
                     result[str(k['degree'])] += k['total']
         for word in about_me_text_3:
             keywords = Keyword.objects.filter(name__icontains=word). \
-                           values("degree").annotate(total=Count('id')).order_by('-total')[:3]
+                           values('degree').annotate(total=Count('id')).order_by('-total')[:3]
             for k in keywords:
                 if str(k['degree']) not in result:
                     result[str(k['degree'])] = k['total']
@@ -417,7 +417,7 @@ class AboutMeViewSet(viewsets.GenericViewSet,
         degrees_id_list = list(result.keys())
         deg = Degree.objects.filter(id__in=degrees_id_list).all()[:3]
         if len(degrees_id_list) < 3:
-            deg = Degree.objects.all().order_by("?")[:3]
+            deg = Degree.objects.all().order_by('?')[:3]
         serializer = self.get_serializer(deg, many=True)
         student = self.get_queryset().first()
         student.degree1 = deg[0]

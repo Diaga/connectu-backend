@@ -80,9 +80,9 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     is_staff = models.BooleanField(default=False)
 
-    keywords = models.ManyToManyField('Keyword')
-    mentor = models.OneToOneField('Mentor', on_delete=models.CASCADE, null=True)
-    student = models.OneToOneField('Student', on_delete=models.CASCADE, null=True)
+    keywords = models.ManyToManyField('Keyword', blank=True)
+    mentor = models.OneToOneField('Mentor', on_delete=models.CASCADE, null=True, blank=True)
+    student = models.OneToOneField('Student', on_delete=models.CASCADE, null=True, blank=True)
 
     objects = UserManager()
 

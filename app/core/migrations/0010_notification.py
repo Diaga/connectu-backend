@@ -10,7 +10,7 @@ import uuid
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0008_auto_20201208_2238'),
+        ('core', '0009_auto_20201208_2238'),
     ]
 
     operations = [
